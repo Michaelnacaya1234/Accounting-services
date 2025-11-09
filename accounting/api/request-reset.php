@@ -135,6 +135,28 @@ try {
     throw new RuntimeException('Provided email does not match this account.');
   }
 
+  // Resolve a friendly client name for the email greeting
+  $clientName = isset($user['Username']) && $user['Username'] !== '' ? (string)$user['Username'] : 'there';
+  if (!empty($user['Client_id'])) {
+    try {
+      $nstmt = $pdo->prepare('SELECT First_name, Middle_name, Last_name, Business_name FROM tblclient WHERE Client_ID = :cid LIMIT 1');
+      $nstmt->execute([':cid' => (int)$user['Client_id']]);
+      $nrow = $nstmt->fetch(PDO::FETCH_ASSOC);
+      if ($nrow) {
+        $first = isset($nrow['First_name']) ? trim((string)$nrow['First_name']) : '';
+        $middle = isset($nrow['Middle_name']) ? trim((string)$nrow['Middle_name']) : '';
+        $last = isset($nrow['Last_name']) ? trim((string)$nrow['Last_name']) : '';
+        $full = trim(preg_replace('/\s+/', ' ', trim($first . ' ' . ($middle !== '' ? $middle . ' ' : '') . $last)));
+        if ($full === '' && !empty($nrow['Business_name'])) {
+          $full = trim((string)$nrow['Business_name']);
+        }
+        if ($full !== '') { $clientName = $full; }
+      }
+    } catch (Throwable $e) {
+      // ignore name resolution errors
+    }
+  }
+
   // Stateless password reset token (no database table required)
   // Generate a 6-digit code and sign a token that includes user id, expiry, and code hash
   try { $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT); }
@@ -203,32 +225,102 @@ try {
     $resetUrl = $origin . '/accounting/#/reset-password?token=' . urlencode($token);
 
     $mail->Body = "
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; color: #0f172a; }
-          .container { max-width: 560px; margin: 0 auto; padding: 24px; }
-          .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
-          .code { font-size: 28px; letter-spacing: 8px; font-weight: 700; background: #f1f5f9; color: #111827; padding: 12px 16px; border-radius: 10px; text-align: center; }
-          .muted { color: #64748b; font-size: 14px; }
-          .button { display: inline-block; padding: 10px 16px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; }
-        </style>
-      </head>
-      <body>
-        <div class='container'>
-          <div class='card'>
-            <h2>Password Reset Code</h2>
-            <p>Use the code below to reset your password. This code will expire in <strong>{$minutesValid} minutes</strong>.</p>
-            <p class='code'>" . htmlspecialchars($code) . "</p>
-            <p>You can also open the reset page directly:</p>
-            <p><a class='button' href='" . htmlspecialchars($resetUrl) . "'>Open Reset Page</a></p>
-            <p class='muted'>If you did not request this, you can ignore this email.</p>
-          </div>
+    <html>
+    <head>
+      <style>
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          background-color: #f4f6f8; 
+          color: #0f172a; 
+          margin: 0; 
+          padding: 0;
+        }
+        .container { 
+          max-width: 600px; 
+          margin: 40px auto; 
+          background: #ffffff; 
+          border-radius: 10px; 
+          box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+          overflow: hidden; 
+        }
+        .header { 
+          background-color: #2563eb; 
+          color: #ffffff; 
+          padding: 20px 30px; 
+          text-align: center; 
+          border-radius: 10px 10px 0 0;
+        }
+        .content { 
+          padding: 30px; 
+          line-height: 1.6; 
+        }
+        .code-box {
+          background: #f1f5f9; 
+          padding: 14px; 
+          border-radius: 8px; 
+          text-align: center; 
+          margin: 20px 0;
+        }
+        .code { 
+          font-size: 28px; 
+          font-weight: 700; 
+          letter-spacing: 8px; 
+          color: #111827; 
+        }
+        .button {
+          display: inline-block; 
+          background-color: #2563eb; 
+          color: #ffffff; 
+          padding: 12px 28px; 
+          border-radius: 8px; 
+          text-decoration: none; 
+          font-weight: 600; 
+          margin-top: 10px;
+        }
+        .button:hover { background-color: #1e40af; }
+        .footer { 
+          font-size: 13px; 
+          color: #64748b; 
+          text-align: center; 
+          padding: 20px; 
+          border-top: 1px solid #e2e8f0; 
+          background-color: #fafafa;
+        }
+      </style>
+    </head>
+    <body>
+      <div class='container'>
+        <div class='header'>
+          <h2>Password Reset Request</h2>
         </div>
-      </body>
-      </html>
+        <div class='content'>
+          <p>Dear " . htmlspecialchars($clientName) . ",</p>
+          <p>We received a request to reset your password for your <strong>Accounting System</strong> account.</p>
+          <p>Please use the verification code below to proceed with your password reset. This code will expire in <strong>{$minutesValid} minutes</strong> for your security.</p>
+    
+          <div class='code-box'>
+            <div class='code'>" . htmlspecialchars($code) . "</div>
+          </div>
+    
+          <p>Alternatively, you can open the reset page directly using the button below:</p>
+    
+          <p style='text-align: center;'>
+            <a class='button' href='" . htmlspecialchars($resetUrl) . "'>Open Reset Page</a>
+          </p>
+    
+          <p>If you did not request a password reset, please disregard this email. Your account will remain secure.</p>
+    
+          <p>Best regards,<br><strong>The Accounting System Team</strong></p>
+        </div>
+        <div class='footer'>
+          <p>This is an automated message — please do not reply directly.</p>
+          <p>© " . date('Y') . " Accounting System. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
     ";
-
+    
     $mail->AltBody = "Your password reset code is: " . $code . "\nThis code expires in {$minutesValid} minutes.\nOpen reset page: " . $resetUrl;
 
     $mail->send();

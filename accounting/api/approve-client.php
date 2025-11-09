@@ -190,50 +190,100 @@ try {
     // Get login URL
     $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : 
               (isset($_SERVER['HTTP_HOST']) ? 'http://' . $_SERVER['HTTP_HOST'] : 'http://localhost/Accounting');
-    $loginUrl = $origin . '/accounting/#/login';
+    $loginUrl = $origin . 'http://localhost:3000/#/';
     
-    $mail->Body = "
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-          .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
-          .button { display: inline-block; padding: 12px 30px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-          .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class='container'>
-          <div class='header'>
-            <h2>Account Approval Notification</h2>
-          </div>
-          <div class='content'>
-            <p>Dear " . htmlspecialchars($clientName) . ",</p>
-            <p>We are pleased to inform you that your account has been <strong>approved</strong>!</p>
-            <p>You can now log in to your client dashboard using your credentials:</p>
-            <ul>
-              <li><strong>Username:</strong> " . htmlspecialchars($userData['Username']) . "</li>
-            </ul>
-            <p style='text-align: center;'>
-              <a href='" . htmlspecialchars($loginUrl) . "' class='button'>Login to Dashboard</a>
-            </p>
-            <p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
-            <p>Best regards,<br>Accounting System Team</p>
-          </div>
-          <div class='footer'>
-            <p>This is an automated message. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    ";
+$mail->Body = "
+<html>
+<head>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header { 
+          background-color: #2563eb; 
+          color: #ffffff; 
+          padding: 20px 30px; 
+          text-align: center; 
+          border-radius: 10px 10px 0 0;
+        }
+    .content {
+      padding: 30px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background-color: #2196F3;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .button:hover {
+      background-color: #1976D2;
+    }
+    .footer {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      padding: 20px;
+      border-top: 1px solid #eee;
+      background-color: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <div class='header'>
+      <h2>Account Approval Confirmation</h2>
+    </div>
+    <div class='content'>
+      <p>Dear " . htmlspecialchars($clientName) . ",</p>
+
+      <p>We are pleased to inform you that your account registration with the <strong>Accounting Management System</strong> has been successfully <strong>approved</strong>.</p>
+
+      <p>You may now log in to your account using the credentials you provided during registration.</p>
+
+      <ul>
+        <li><strong>Username:</strong> " . htmlspecialchars($recipientEmail) . "</li>
+      </ul>
+
+      <p style='text-align: center;'>
+        <a href='" . htmlspecialchars($loginUrl) . "' class='button'>Access Your Dashboard</a>
+      </p>
+
+      <p>If you encounter any issues while logging in, please don’t hesitate to contact our support team for assistance.</p>
+
+      <p>Thank you for choosing our system. We look forward to supporting your accounting needs.</p>
+
+      <p>Kind regards,<br><strong>Accounting System Administrator</strong></p>
+    </div>
+    <div class='footer'>
+      <p>This is an automated message. Please do not reply directly to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+";
+
     
     $mail->AltBody = "Dear " . $clientName . ",\n\n" .
                      "We are pleased to inform you that your account has been approved!\n\n" .
                      "You can now log in to your client dashboard using your credentials:\n" .
-                     "Username: " . $userData['Username'] . "\n\n" .
+                     "Email: " . $recipientEmail . "\n\n" .
                      "Login URL: " . $loginUrl . "\n\n" .
                      "If you have any questions or need assistance, please don't hesitate to contact us.\n\n" .
                      "Best regards,\nAccounting System Team";

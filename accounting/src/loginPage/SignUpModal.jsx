@@ -15,6 +15,7 @@ import {
 export default function SignUpModal({ open, onClose }) {
   const firstInputRef = useRef(null);
   const lastActiveRef = useRef(null);
+  const userInteractedRef = useRef(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -31,12 +32,25 @@ export default function SignUpModal({ open, onClose }) {
 
     if (open) {
       lastActiveRef.current = document.activeElement;
+      userInteractedRef.current = false;
+      const markInteracted = () => { userInteractedRef.current = true; };
+      // Capture early to detect clicks/focus before timeout fires
+      document.addEventListener('pointerdown', markInteracted, true);
+      document.addEventListener('focusin', markInteracted, true);
+
       const t = setTimeout(() => {
-        firstInputRef.current?.focus();
+        // Only autofocus if user hasn't interacted and nothing else is focused
+        const active = document.activeElement;
+        const nothingFocused = !active || active === document.body;
+        if (!userInteractedRef.current && nothingFocused) {
+          firstInputRef.current?.focus();
+        }
       }, 120);
       window.addEventListener('keydown', onKey);
       return () => {
         clearTimeout(t);
+        document.removeEventListener('pointerdown', markInteracted, true);
+        document.removeEventListener('focusin', markInteracted, true);
         window.removeEventListener('keydown', onKey);
       };
     }
